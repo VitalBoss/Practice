@@ -1,1 +1,1 @@
-Практикика в Linx Technologies
+**Практикика в Linx Technologies**
