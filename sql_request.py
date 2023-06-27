@@ -1,6 +1,68 @@
 import sys
 import time
 
+def input_first(s):
+    c = True
+    s = correct_str(s)
+    s = s.split()
+
+    if s[0].lower() != 'select':
+        c = False
+    if s[-2].lower() != 'from':
+        c = False
+    return c
+
+def input_second(s): # корректность ввода 2 строки
+    s = correct_str(s)
+    s = skobki(s)
+    s = s.split()
+    if s[0].lower() != 'where':
+        print("2 строка введена неверно")
+        sys.exit()
+    s = s[1:]
+    for i in range(len(s)):
+        if s[i] == '(' and (i+1) <= (len(s)-1):
+            if s[i+1] == 'and' or s[i+1] == 'or' or s[i+1] == '=' or s[i+1] == '<>':
+                return False
+        elif s[i] == ')' and (i+1) <= (len(s)-1):
+            if s[i+1] != 'and' and s[i+1] != 'or' and s[i+1] != '=' and s[i+1] != '<>' and s[i+1] != ')':
+                return False
+        elif s[i] == 'upper' and (i+1) <= (len(s)-1):
+            if s[i+1] != '(':
+                return False
+        elif s[i] == 'not' and (i+1) <= (len(s)-1):
+            if s[i+1] == 'and' or s[i+1] == 'or' or s[i+1] == ')' or s[i+1] == '=' or s[i+1] == '<>':
+                return False
+        elif s[i] == '=' or s[i] == '<>' and (i+1) <= (len(s)-1):
+            if s[i+1] == 'and' or s[i+1] == 'or' or s[i+1] == ')':
+                return False
+        elif s[i] != '=' and s[i] != '<>' and s[i] != 'and' and s[i] != 'or' and s[i] != 'upper' and s[i] != '(' and s[i] != 'not' and s[i] != ')' and (i+1) <= (len(s)-1):
+            if s[i+1] != '=' and s[i+1] != '<>' and s[i+1] != 'and' and s[i+1] != 'or' and s[i+1] != ')':
+                return False
+        elif s[i] == 'and' or s[i] == 'or' and (i+1) <= (len(s)-1):
+            if s[i+1] == ')' or s[i+1] == '=' or s[i+1] == '<>':
+                return False
+
+    if s[0] == 'and' or s[0] == 'or' or s[len(s)-1] == 'and' or s[len(s)-1] == 'or':
+        return False
+    return True
+    
+
+
+def input_third(s): # корректность ввода 3 строки
+    s = correct_str(s)
+    s = s.split()
+    if s[0].lower() != 'order' and s[1].lower() != 'by':
+        return False
+    s = s[2:]
+    for i in range(0, len(s), 2):
+        if ',' in s[i+1]:
+            s[i+1] = s[i+1][:len(s[i+1])-1]
+        if s[i+1].lower() != 'asc' and s[i+1].lower() != 'desc':
+            return False
+        
+    return True
+
 
 def processing_str(str): # добавляем пробел между = и <>, также проверяем корректность скобочной последовательности
     ans = ''
@@ -32,8 +94,8 @@ def priority_and(s): # функция, которая ищет применим�
         if (s[i] == 'and'):
             if type(s[i-1]) == dict and type(s[i+1]) == dict:
                 return True
-            elif s[i-1] != ')' and (s[i+1] != 'not' and s[i+1] != '('):
-                return True
+            #elif s[i-1] != ')' and (s[i+1] != 'not' and s[i+1] != '('):
+            #    return True
     return False
 
 def check(s):  #если после открывающейся скобки идет словарь и потом закрывающаяся скобка, то запомним их индексы, чтобы потом удалить их
@@ -51,7 +113,8 @@ def check(s):  #если после открывающейся скобки ид
     return mas, ex
 
 
-def del_skobki(s): #непосредственно удаление ненужных скобок 
+def del_skobki(s): #непосредственно удаление ненужных скобок, между которыми заключен словарь. Если нет больше and или or, 
+                    #или скобок, то запрос полностью обработан
     mas, ex = check(s)
     #print(mas)
     new_mas = []
@@ -100,38 +163,77 @@ def skobki(s): # слева и справа от скобки добавляем
                 
 def main(mas_str):
 
-    query_necessary = ['selekt', 'from']
+    query_necessary = ['select', 'from']
     query_not_necessary = ['where', 'order by']
     oper = ['=', '<>',  'upper']
     bool_oper = ['not', 'or', 'and']
     sort = ['asc', 'desc']
 
+
     mas_str[1], _ = processing_str(mas_str[1])
     if not(_):
-        print("Неверный ввод")
-        sys.exit()
+        print("Неверный ввод 2 строки")
+        return "Неверный ввод 2 строки"
 
-    #если в первой строке нет хотя бы одного обязательного символа, то выход
-    if (query_necessary[0] == mas_str[0].lower().split()[0]) and (query_necessary[0] == mas_str[-2].lower().split()[-2]):
-        print(mas_str[0].lower().split()[0], mas_str[-2].lower().split()[-2])
-        print("Неверный ввод")
-        sys.exit()
+    if len(mas_str) > 1:  # приведем некоторые слова к нижнему регистру в 1 строке
+        mas_str[1] = skobki(mas_str[1])
+        mas_str[1] = mas_str[1].split()
+        for i, elem in enumerate(mas_str[1]):
+            if mas_str[1][i].lower() == 'and':
+                mas_str[1][i] = mas_str[1][i].lower()
+            if mas_str[1][i].lower() == 'or':
+                mas_str[1][i] = mas_str[1][i].lower()
+            if mas_str[1][i].lower() == 'upper':
+                mas_str[1][i] = mas_str[1][i].lower()
+            if mas_str[1][i].lower() == 'where':
+                mas_str[1][i] = mas_str[1][i].lower()
+            if mas_str[1][i].lower() == 'not':
+                mas_str[1][i] = mas_str[1][i].lower()
 
-    query = {
-        'select' : []
-    }
+    mas_str[1] = ' '.join(mas_str[1])
+
+    #проверка корректности ввода данных
+    if len(mas_str) > 0:
+        if not(input_first(mas_str[0])):
+            z = "1 строка введена неверно"
+            print(z)
+            return z
+    if len(mas_str) > 1:
+        if not(input_second(mas_str[1])):
+            z = "2 строка введена неверно"
+            print(z)
+            return z
+    if len(mas_str) > 2:
+        if not(input_third(mas_str[2])):
+            z = "3 строка введена неверно"
+            print(z)
+            return z
+
+    
 
     flag = True
+    fl = True
     #добавляем пробел после запятой, затем убираем запятую после слова. Если одно слово, то все хорошо
     #первое и предпоследнее слово фиксировано, между ними может быть, что угодно
-
     mas_str[0] = correct_str(mas_str[0])
+
+    if mas_str[0].split()[2].lower() != 'from':
+        query = {
+            'select' : []
+        }
+        fl = False
+    else:
+        query = {}
+
 
     for elem in mas_str[0].split():
         if elem.lower() != 'select' and elem.lower() != 'from' and flag:
             if ',' in elem:
                 elem = elem[:len(elem)-1]
-            query['select'].append(elem)
+            if not(fl):
+                query['select'].append(elem)
+            else:
+                query['select'] = elem
 
         if elem.lower() == 'from':
             flag = False
@@ -152,7 +254,7 @@ def main(mas_str):
         for s in mas_str:
             s = skobki(s)
             st = s.split()
-            if st[0] == 'where':
+            if st[0].lower() == 'where':
                 query['where'] = {}
                 st.pop(0)
                 s1 = []
@@ -173,7 +275,7 @@ def main(mas_str):
                     if cnt > 0:
                         cnt -= 1            
                     elif  st[idx] != 'not' and st[idx] != '=' and st[idx] != '<>' and st[idx] != 'and' and st[idx] != 'or' and st[idx] != ')' and st[idx] != '(' and ((idx+2) <= len(st)):
-                        if (idx+2) <= (len(st)-1) and st[idx+2] != 'not':
+                        if (idx+2) <= (len(st)-1) and (st[idx+1] == '=' or st[idx+1] == '<>') and st[idx+2] != 'not' and st[idx+2] != '(':
                             s1.append({st[idx+1]: [st[idx], st[idx+2]]})
                             cnt = 2
                         else:
@@ -252,9 +354,8 @@ def main(mas_str):
                     
                         
             s = st
-            if s[0] == 'order' and s[1] == 'by': #
+            if s[0].lower() == 'order' and s[1].lower() == 'by': #
                 query['order by'] = []
-
                 s = ' '.join(s)
                 s = correct_str(s)
                 s = s.split()
@@ -263,13 +364,10 @@ def main(mas_str):
                 for i in range(0, length, 2):
                     if ',' in s[i+1]:
                         s[i+1] = s[i+1][:len(s[i+1])-1]
-                    query['order by'].append({s[i] : s[i+1]})
+                    query['order by'].append({s[i] : s[i+1].lower()})
     print("query = ", query)
     return query
     
-
-
-
 
 
 if __name__ == "__main__":
@@ -280,16 +378,6 @@ if __name__ == "__main__":
         s = input()
         mas_str.append(s)
     mas_str = mas_str[:len(mas_str)-1]'''
-    main(["select aaa from GPT", "where a = b and c",  "order by aaa desc"])
 
+    main(["select aaa from GPT", "where a=b and (c=p)"])
 
-#select aaa, bbb,ccc from GPT
-#where aaa = r and bbb = c
-#order by aaa desc
-     
-#where ((ASD = upper(asd) or asd <> ddd) or not(asd = mmm and qqq <> aaa)) and not(www = xyz or www <> piz)
-#where not(asd = ddd or upper(asd) <> ddd)
-#where asd = qwe or ccc = ppp and rrr <> ooo and not(xxx = yyy)
-
-#order by aaa asc,bbb desc
-#order by aaa asc, bbb desc, ccc desc
