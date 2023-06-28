@@ -4,76 +4,99 @@ import sql_request
 class TestSQLTree(unittest.TestCase):
 
     def test_result(self):
-        self.assertEqual(sql_request.main(["select aaa from GPT", \
-                                           "where b and (c = p or d)"]),  \
+        self.assertEqual(sql_request.main("select aaa from GPT"), {'select': 'aaa', 'from': 'GPT'})
+
+        self.assertEqual(sql_request.main("select aaa from GPT where b and (c = p or d)"),  \
                                                                         {'select': 'aaa', 'from': 'GPT', \
                                                                          'where': {'and': ['b', {'or': [{'=': ['c', 'p']}, 'd']}]}})
         
-        self.assertEqual(sql_request.main(["select aaa FROM GPT", \
-                                            "where b <> (c = p OR d)"]),    {'select': 'aaa', 'from': 'GPT', \
+        self.assertEqual(sql_request.main("select aaa FROM GPT where b <> (c = p OR d)"),    {'select': 'aaa', 'from': 'GPT', \
                                                                              'where': {'<>': ['b', {'or': [{'=': ['c', 'p']}, 'd']}]}})
 
-        self.assertEqual(sql_request.main(["select aaa from GPT", \
-                                        "where a = b or c",   \
-                                        "order BY aaa desc"]), \
+        self.assertEqual(sql_request.main("select aaa from GPT where a = b or c order BY aaa desc"), \
                                                                     {'select': 'aaa', 'from': 'GPT', \
-                                                                     'where': {'or': [{'=': ['a', 'b']}, 'c']}, 'order by': [{'aaa': 'desc'}]})
+                                                                     'where': {'or': [{'=': ['a', 'b']}, 'c']}, 'order by': {'aaa': 'desc'}})
         
-        self.assertEqual(sql_request.main(["select aaa,bbb,ccc from GPT", \
-                                        "WHERE aaa = r and bbb = c",   \
-                                        "order by aaa desc"]),         \
+        self.assertEqual(sql_request.main("select aaa,bbb,ccc from GPT WHERE aaa = r and bbb = c order by aaa desc"),         \
                                                                            {'select' : ['aaa', 'bbb', 'ccc'], 'from' : 'GPT', \
                                                                             'where' : {'and' : [{'=' : ['aaa', 'r']}, {'=' : ['bbb', 'c']}]},\
-                                                                             'order by' : [{'aaa' : 'desc'}]})
+                                                                             'order by' : {'aaa' : 'desc'}})
         
 
-        self.assertEqual(sql_request.main(["select aaa , bbb from GPT", \
-                                        "where NOT(asd = ddd or upper(asd) <> ddd)", \
-                                        "order by aaa asc, bbb desc"]), \
+        self.assertEqual(sql_request.main("select aaa , bbb from GPT \
+                                          where NOT(asd = ddd or upper(asd) <> ddd)\
+                                           order by aaa asc, bbb desc"), \
                                                                                             {'select': ['aaa', 'bbb'], 'from': 'GPT',\
                                                                                              'where': {'not': {'or': [{'=': ['asd', 'ddd']}, {'<>': [{'upper': 'asd'}, 'ddd']}]}},\
                                                                                             'order by': [{'aaa': 'asc'}, {'bbb': 'desc'}]})
         
 
-        self.assertEqual(sql_request.main(["select aaa , bbb from GPT", \
-                                        "where not(asd = upper(ddd) or asd <> ddd)", \
-                                        "order by aaa asc, bbb desc"]), \
+        self.assertEqual(sql_request.main("select aaa , bbb from GPT \
+                                        where not(asd = upper(ddd) or asd <> ddd) \
+                                        order by aaa asc, bbb desc"), \
                                                                                        {'select': ['aaa', 'bbb'], 'from': 'GPT', \
                                                                                          'where': {'not': {'or': [{'=': ['asd', {'upper': 'ddd'}]}, {'<>': ['asd', 'ddd']}]}},\
                                                                                         'order by': [{'aaa': 'asc'}, {'bbb': 'desc'}]})
 
-        self.assertEqual(sql_request.main(["select aaa , bbb,ccc from GPT", \
-                                        "where asd = qwe or ccc = ppp and rrr <> ooo and not(xxx = yyy)", \
-                                        "order by aaa asc, bbb desc,ccc desc"]),                           {'select': ['aaa', 'bbb', 'ccc'], 'from': 'GPT', \
+        self.assertEqual(sql_request.main("select aaa , bbb,ccc from GPT \
+                                        where asd = qwe or ccc = ppp and rrr <> ooo and not(xxx = yyy) \
+                                        order by aaa asc, bbb desc,ccc desc"),                           {'select': ['aaa', 'bbb', 'ccc'], 'from': 'GPT', \
                                                                                                             'where': {'or': [{'=': ['asd', 'qwe']}, {'and': [{'and': [{'=': ['ccc', 'ppp']}, {'<>': ['rrr', 'ooo']}]}, {'not': {'=': ['xxx', 'yyy']}}]}]}, \
                                                                                                             'order by': [{'aaa': 'asc'}, {'bbb': 'desc'}, {'ccc': 'desc'}]})
 
-        self.assertEqual(sql_request.main(["select aaa , bbb,ccc from GPT", \
-                                        "where not(asd=ddd or upper(asd) <>ddd)"]),   \
+        self.assertEqual(sql_request.main("select aaa , bbb,ccc from GPT \
+                                        where not(asd=ddd or upper(asd) <>ddd)"),   \
                                                                                         {'select': ['aaa', 'bbb', 'ccc'], 'from': 'GPT', \
                                                                                          'where': {'not': {'or': [{'=': ['asd', 'ddd']}, {'<>': [{'upper': 'asd'}, 'ddd']}]}}})
 
 
-        self.assertEqual(sql_request.main(["select aaa , bbb from GPT", \
-                                        "where ((ASD = upper(asd) or asd <> ddd) or not(asd = mmm and qqq <> aaa)) and not(www = xyz or www <> piz)"]),\
+        self.assertEqual(sql_request.main("select aaa , bbb from GPT \
+                                        where ((ASD = upper(asd) or asd <> ddd) or not(asd = mmm and qqq <> aaa)) and not(www = xyz or www <> piz)"),\
                                                                                                                                            {'select': ['aaa', 'bbb'], 'from': 'GPT', \
                                                                                                                                            'where': {'and': [{'or': [{'or': [{'=': ['ASD', {'upper': 'asd'}]}, {'<>': ['asd', 'ddd']}]}, {'not': {'and': [{'=': ['asd', 'mmm']}, {'<>': ['qqq', 'aaa']}]}}]}, {'not': {'or': [{'=': ['www', 'xyz']}, {'<>': ['www', 'piz']}]}}]}} )
         
-        self.assertEqual(sql_request.main(["selekt aaa from GPT", \
-                                           "where b and (c = p or d)"]), "1 строка введена неверно")
+        self.assertEqual(sql_request.main("selekt aaa from GPT \
+                                           where b and (c = p or d)"), "1 строка введена неверно")
         
-        self.assertEqual(sql_request.main(["select aaa from GPT", \
-                                           "where b and (c = p or d))"]), "Неверный ввод 2 строки")
+        self.assertEqual(sql_request.main("select aaa from GPT \
+                                           where b and (c = p or d))"), "Неверный ввод 2 строки")
         
-        self.assertEqual(sql_request.main(["select aaa from GPT", \
-                                           "where b and (c = p or d) or"]), "2 строка введена неверно")
+        self.assertEqual(sql_request.main("select aaa from GPT\
+                                           where b and (c = p or d) or"), "2 строка введена неверно")
         
-        self.assertEqual(sql_request.main(["select aaa from GPT", \
-                                           "where b and (c = p upper(or) d)"]), "2 строка введена неверно")
+        self.assertEqual(sql_request.main("select aaa from GPT \
+                                           where b and (c = p upper(or) d)"), "2 строка введена неверно")
         
-        self.assertEqual(sql_request.main(["select aaa from GPT", \
-                                        "where a = b or c",   \
-                                        "order by aaa decs"]),  "3 строка введена неверно")     
+        self.assertEqual(sql_request.main("select aaa from GPT \
+                                        where a = b or c   \
+                                        order by aaa decs"),  "3 строка введена неверно")   
+        #===================================================================================================
+        # Протестируем еще парочку примеров (из телеграмма)
+
+        self.assertEqual(sql_request.main("SELECT strFirstName, strDesc, strName FROM TApcCardHolder  \
+                                           WHERE strFirstName = Иван"),                                  {"select": ["strFirstName", "strDesc", "strName"], "from": "TApcCardHolder",
+                                                                                                            "where": {"=": ["strFirstName", "Иван"]}})
+        
+        self.assertEqual(sql_request.main("SELECT strFirstName, strDesc, strName  FROM TApcCardHolder \
+                                           WHERE upper(strFirstName) <> ИВАН"),                        {"select": ["strFirstName", "strDesc", "strName"], "from": "TApcCardHolder",
+                                                                                                        "where": {"<>": [{"upper": "strFirstName"}, "ИВАН"]}})
+        
+        self.assertEqual(sql_request.main("SELECT strName, strDesc, strFirstName FROM TApcCardHolder\
+                                           WHERE not (strFirstName = Иван% or strFirstName = иВан)"),  \
+                                                                                        {"select": ["strName", "strDesc", "strFirstName"],\
+                                                                                        "from": "TApcCardHolder",\
+                                                                                        "where": {"not": {"or": [{"=": ["strFirstName", "Иван%"]},\
+                                                                                                                {"=": ["strFirstName", "иВан"]}]}}})
+        
+        self.assertEqual(sql_request.main("SELECT strDesc, strFirstName FROM TApcCardHolder \
+                                           WHERE  strFirstName = Иван or strFirstName = Петр \
+                                            ORDER BY  strFirstName DESC"), \
+                                                                        {
+                                                                        "select": ["strDesc", "strFirstName"],
+                                                                        "from": "TApcCardHolder",
+                                                                        "where": {"or": [{"=": ["strFirstName", "Иван"]},
+                                                                                        {"=": ["strFirstName", "Петр"]}]},
+                                                                        "order by": {"strFirstName": "desc"}})
 
 # также протестируем вспомогательные функции
 
